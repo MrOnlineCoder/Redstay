@@ -34,7 +34,7 @@ Player::~Player(void)
 }
 
 
-void Player::update(void)
+void Player::update(float timescale)
 {
 	if (sf::Keyboard::isKeyPressed(sf::Keyboard::W)) { 
 		if (onGround) {
@@ -56,10 +56,10 @@ void Player::update(void)
 			right = true;
 			spr.setScale(1.f, 1.f);
 		}
-		vel.x = Constants::PLAYER_SPEED;
+		vel.x = Constants::PLAYER_SPEED * timescale;
 	} 
 
-	vel.y += Constants::GRAVITY;
+	vel.y += Constants::GRAVITY * timescale;
 
 
 	if (!sf::Keyboard::isKeyPressed(sf::Keyboard::A) && !sf::Keyboard::isKeyPressed(sf::Keyboard::D)) {

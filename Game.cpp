@@ -67,6 +67,7 @@ void Game::init(void)
 	tips.push_back("Teleports are real!");
 	tips.push_back("Seems to be easy.");
 	tips.push_back("Oh, crap! Too many teleports!");
+	tips.push_back("Use Time Ray to slow down the time!");
 	tips.push_back("Good Luck.\n-Mr.Gray");
 
 	f.loadFromFile("data/fonts/Roboto-Regular.ttf");
@@ -98,6 +99,9 @@ void Game::init(void)
 	tpBuff.loadFromFile("data/sfx/teleport.ogg");
 	tpSnd.setBuffer(tpBuff);
 
+	rewBuff.loadFromFile("data/sfx/rewind.ogg");
+	rewSnd.setBuffer(rewBuff);
+
 	flash.setFillColor(sf::Color::White);
 	flash.setSize(sf::Vector2f(1024,768));
 	flash.setPosition(sf::Vector2f(0,0));
@@ -123,6 +127,8 @@ void Game::loadLevel() {
 
 	teleports.clear();
 	teleportsEnds.clear();
+	timescale = 1.0f;
+	music.setPitch(1.0f);
 
 	std::string path = "data/levels/";
 	path = path + itos(currentLevel);
@@ -185,7 +191,7 @@ void Game::newMusic() {
 
 void Game::update()
 {
-	pl.update();
+	pl.update(timescale);
 
 	/* pretty background animation*/
 	bg1.move(0, Constants::BG_SPEED);
@@ -215,7 +221,7 @@ void Game::update()
 	}
 
 	if (hasTp) {
-		tpSpr.rotate(5.0f);
+		tpSpr.rotate(5.0f*timescale);
 	}
 
 	/* x collision check*/
@@ -225,8 +231,8 @@ void Game::update()
 		if (pl.spr.getGlobalBounds().intersects(obj[i].rect)) {
 			if (obj[i].name=="solid") {
 
-				if (pl.vel.x > 0 ) { pl.spr.move(-pl.vel.x, 0); pl.vel.x = 0; }
-				if (pl.vel.x < 0 ) { pl.spr.move(-pl.vel.x, 0); pl.vel.x = 0; }
+				if (pl.vel.x > 0 ) { pl.spr.move(-pl.vel.x*timescale, 0); pl.vel.x = 0; }
+				if (pl.vel.x < 0 ) { pl.spr.move(-pl.vel.x*timescale, 0); pl.vel.x = 0; }
 
 			} 
 		}
@@ -238,7 +244,8 @@ void Game::update()
 		if (pl.spr.getGlobalBounds().intersects(obj[i].rect)) {
 			if (obj[i].name=="solid") {
 				if (pl.vel.y > 0) { pl.spr.setPosition(sf::Vector2f(pl.spr.getPosition().x, obj[i].rect.top - obj[i].rect.height)); pl.vel.y = 0; pl.onGround = true;}
-				if (pl.vel.y < 0) { pl.spr.move(0, -pl.vel.y); pl.vel.y = 0;}
+				if (pl.vel.y < 0) { pl.spr.move(0, -pl.vel.y*timescale); pl.vel.y = 0;}
+				continue;
 			} 
 
 			/* If we touched damage blocks*/
@@ -247,6 +254,7 @@ void Game::update()
 				pl.vel.x = 0;
 				pl.vel.y = 0;
 				restartLevel();	
+				continue;
 			}
 
 			/* If we picked up a key*/
@@ -255,6 +263,7 @@ void Game::update()
 					key = true;
 					pickupSnd.play();
 				}
+				continue;
 			}
 
 			/* If we touched a teleport */
@@ -264,6 +273,15 @@ void Game::update()
 				pl.vel.x = 0;
 				pl.vel.y = 0;
 				tpSnd.play();
+				continue;
+			}
+
+			if (obj[i].name == "rewind") {
+				if (timescale == 1.0f) {
+				  rewSnd.play();
+				  timescale = 0.4f;
+				  music.setPitch(0.5f);
+				}
 			}
 		}
 	}
@@ -281,7 +299,7 @@ void Game::update()
 
 	if (debug) {
 		std::stringstream ss;
-		ss << "vel: " << pl.vel.x << " : " << pl.vel.y << "\n" << "onGround: " << pl.onGround << "\nkey: " << key;
+		ss << "vel: " << pl.vel.x << " : " << pl.vel.y << "\n" << "onGround: " << pl.onGround << "\nkey: " << key << "\nlvl: "<< currentLevel;
 		debugTxt.setString(ss.str());
 	}
 					

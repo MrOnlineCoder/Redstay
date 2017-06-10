@@ -17,7 +17,7 @@ class Player
 public:
 	Player(void);
 	~Player(void);
-	void update(void);
+	void update(float timescale);
 	void draw(sf::RenderWindow& window);
 
 	sf::Sprite spr;

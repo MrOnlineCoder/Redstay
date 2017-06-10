@@ -54,6 +54,8 @@ public:
 	sf::Sound tpSnd;
 	sf::SoundBuffer tpBuff;
 
+	sf::Sound rewSnd;
+	sf::SoundBuffer rewBuff;
 
 	sf::RectangleShape flash;
 
@@ -75,5 +77,6 @@ public:
 	bool isKey;
 	bool hasTp;
 	bool debug;
+	float timescale;
 };
 
