@@ -781,7 +781,7 @@
   <object id="7" name="solid" x="480" y="576" width="512" height="32"/>
   <object id="8" name="solid" x="416" y="672" width="416" height="32"/>
   <object id="9" name="solid" x="448" y="704" width="384" height="32"/>
-  <object id="10" name="solid" x="224" y="384" width="32" height="320"/>
+  <object id="10" name="solid" x="224" y="384" width="32" height="318"/>
   <object id="11" name="damage" x="480" y="608" width="320" height="32"/>
   <object id="12" name="damage" x="256" y="672" width="90" height="32"/>
   <object id="13" name="damage" x="384" y="672" width="32" height="32"/>

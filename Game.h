@@ -45,6 +45,9 @@ public:
 	sf::Sound deathSnd;
 	sf::SoundBuffer deathBuff;
 
+	sf::Sound dmgSnd;
+	sf::SoundBuffer dmgBuff;
+
 	sf::Sound okSnd;
 	sf::SoundBuffer okBuff;
 
@@ -57,15 +60,24 @@ public:
 	sf::Sound rewSnd;
 	sf::SoundBuffer rewBuff;
 
+	sf::Sound magSnd;
+	sf::SoundBuffer magBuff;
+
 	sf::RectangleShape flash;
 
 	sf::Sprite keySpr;
 
 	sf::Sprite tpSpr;
 
+	sf::Sprite magSpr;
+
 	sf::Vector2f tpPos;
 
 	sf::Text debugTxt;
+
+	sf::Clock deadClock;
+
+	sf::View deathView;
 
 	std::vector<sf::Vector2f> teleports;
 	std::map<std::string,sf::Vector2f> teleportsEnds;
@@ -78,5 +90,9 @@ public:
 	bool hasTp;
 	bool debug;
 	float timescale;
+	int animState;
+	bool finished;
+	bool magnet;
+	int force;
 };
 

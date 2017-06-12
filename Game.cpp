@@ -1,10 +1,10 @@
 /*
-  Copyright (c) 2017 Nikita Kogut (vk.com/mronlinecoder | github.com/MrOnlineCoder | mronlinecoder@gmail.com)
-  All rights reserved.
-  
-  Only original author is allowed to edit and share this file.
-  Unauthorized copying or editing this file, via any medium is strictly prohibited
-  Proprietary and confidential
+Copyright (c) 2017 Nikita Kogut (vk.com/mronlinecoder | github.com/MrOnlineCoder | mronlinecoder@gmail.com)
+All rights reserved.
+
+Only original author is allowed to edit and share this file.
+Unauthorized copying or editing this file, via any medium is strictly prohibited
+Proprietary and confidential
 
 */
 
@@ -22,16 +22,9 @@
 
 std::string itos(int i) // convert int to string
 {
-    std::stringstream s;
-    s << i;
-    return s.str();
-}
-
-std::string ftos(float i) // convert int to string
-{
-    std::stringstream s;
-    s << i;
-    return s.str();
+	std::stringstream s;
+	s << i;
+	return s.str();
 }
 
 
@@ -50,15 +43,26 @@ Game::~Game(void)
 void Game::init(void)
 {
 	srand(time(0));
-	currentLevel = 0;
+	currentLevel = 10;
 	flashing = false;
 	debug = false;
+	animState = 0;
+	force = 1;
+	finished = false;
+	pl.init();
+	pl.tex.loadFromFile("data/images/player.png");
+	timescale = 1.0f;
+
+	tips.clear();
+	tracks.clear();
+
 
 
 	tracks.push_back("data/music/game.ogg");
 	tracks.push_back("data/music/game2.ogg");
 	tracks.push_back("data/music/game3.ogg");
-	
+	tracks.push_back("data/music/game4.ogg");
+
 	tips.push_back("Use A and D to move, W to jump");
 	tips.push_back("Try to avoid Red Blocks");
 	tips.push_back("Be patient.");
@@ -68,6 +72,9 @@ void Game::init(void)
 	tips.push_back("Seems to be easy.");
 	tips.push_back("Oh, crap! Too many teleports!");
 	tips.push_back("Use Time Ray to slow down the time!");
+	tips.push_back("Stuck in space!");
+	tips.push_back("Press E to use a magnet");
+	tips.push_back("Swap and stop!");
 	tips.push_back("Good Luck.\n-Mr.Gray");
 
 	f.loadFromFile("data/fonts/Roboto-Regular.ttf");
@@ -83,11 +90,14 @@ void Game::init(void)
 	bgTex.loadFromFile("data/images/bg2.png");
 	bg1.setTexture(bgTex);
 	bg2.setTexture(bgTex);
-	
+
 	bg1.setPosition(0,-768);
 	bg2.setPosition(0,0);
 
-	deathBuff.loadFromFile("data/sfx/death.wav");
+	dmgBuff.loadFromFile("data/sfx/damage.wav");
+	dmgSnd.setBuffer(dmgBuff);
+
+	deathBuff.loadFromFile("data/sfx/death.ogg");
 	deathSnd.setBuffer(deathBuff);
 
 	okBuff.loadFromFile("data/sfx/complete.ogg");
@@ -101,6 +111,9 @@ void Game::init(void)
 
 	rewBuff.loadFromFile("data/sfx/rewind.ogg");
 	rewSnd.setBuffer(rewBuff);
+	
+	magBuff.loadFromFile("data/sfx/magnet.ogg");
+	magSnd.setBuffer(magBuff);
 
 	flash.setFillColor(sf::Color::White);
 	flash.setSize(sf::Vector2f(1024,768));
@@ -112,13 +125,19 @@ void Game::init(void)
 	tpSpr.setTexture(lvl.tilesetImage);
 	tpSpr.setTextureRect(sf::IntRect(5 * Constants::TILESIZE, 0, Constants::TILESIZE, Constants::TILESIZE));
 
+	magSpr.setTexture(lvl.tilesetImage);
+	magSpr.setTextureRect(sf::IntRect(7 * Constants::TILESIZE, 0, Constants::TILESIZE, Constants::TILESIZE));
+
 	tpSpr.setOrigin(sf::Vector2f(tpSpr.getLocalBounds().width/2, tpSpr.getLocalBounds().height/2 ));
 
 	debugTxt.setFont(f);
-	debugTxt.setPosition(36,36);
+	debugTxt.setPosition(36,68);
 	debugTxt.setFillColor(sf::Color::White);
 	debugTxt.setCharacterSize(16);
 
+	deathView.setSize(sf::Vector2f(1024,768));
+
+	magSpr.setPosition(sf::Vector2f(-1000,-1000));
 
 	loadLevel();
 }
@@ -129,6 +148,8 @@ void Game::loadLevel() {
 	teleportsEnds.clear();
 	timescale = 1.0f;
 	music.setPitch(1.0f);
+	magnet = false;
+	force = 1;
 
 	std::string path = "data/levels/";
 	path = path + itos(currentLevel);
@@ -137,11 +158,11 @@ void Game::loadLevel() {
 	lvl.SetDrawingBounds(sf::FloatRect(0,0,1024+32, 768+32));
 
 	Object o = lvl.GetObject("player");
-	pl.spr.setPosition(o.rect.left, o.rect.top);
+	pl.spr.setPosition(o.rect.left + Constants::TILESIZE/2, o.rect.top + Constants::TILESIZE/2);
 
 	Object endObj = lvl.GetObject("end");
-	endPos.x = endObj.rect.left;
-	endPos.y = endObj.rect.top;
+	endPos.x = endObj.rect.left + Constants::TILESIZE/2;
+	endPos.y = endObj.rect.top + Constants::TILESIZE/2;
 
 	if (lvl.HasObject("key")) {
 		isKey = true;
@@ -151,6 +172,11 @@ void Game::loadLevel() {
 	} else {
 		isKey = false;
 		key = false;
+	}
+
+	if (lvl.HasObject("magnet")) {
+		Object mobj = lvl.GetObject("magnet");
+		magSpr.setPosition(sf::Vector2f(mobj.rect.left, mobj.rect.top));
 	}
 
 	std::vector<Object> objs = lvl.GetAllObjects();
@@ -169,18 +195,20 @@ void Game::loadLevel() {
 
 	/*std::vector<Object> objs = lvl.GetAllObjects();
 	for (int i=0;i<objs.size();i++) {
-		if (objs[i].name == "damage") {
-			blacks.push_back(objs[i].rect);
-		}
+	if (objs[i].name == "damage") {
+	blacks.push_back(objs[i].rect);
+	}
 	}*/
 
 	tip.setString(tips[currentLevel]);
 }
 
 void Game::restartLevel() {
+	if (pl.hp == 0) return;
 	Object o = lvl.GetObject("player");
-	pl.spr.setPosition(o.rect.left, o.rect.top);
+	pl.spr.setPosition(o.rect.left + Constants::TILESIZE/2, o.rect.top + Constants::TILESIZE/2);
 	key = false;
+	force = 1;
 }
 
 void Game::newMusic() {
@@ -191,19 +219,30 @@ void Game::newMusic() {
 
 void Game::update()
 {
-	pl.update(timescale);
+	if (animState == 0) pl.update(timescale, force);
 
 	/* pretty background animation*/
-	bg1.move(0, Constants::BG_SPEED);
-	bg2.move(0, Constants::BG_SPEED);
+	bg1.move(0, Constants::BG_SPEED*timescale*force);
+	bg2.move(0, Constants::BG_SPEED*timescale*force);
 
-	if (bg1.getPosition().y >= 768) {
-		bg1.setPosition(0,-768);
-	}
+	if (force == 1) {
+		if (bg1.getPosition().y >= 768) {
+			bg1.setPosition(0,-768);
+		}
 
-	if (bg2.getPosition().y >= 768) {
-		bg2.setPosition(0,-767);
+		if (bg2.getPosition().y >= 768) {
+			bg2.setPosition(0,-767);
+		}
+	} else {
+		if (bg1.getPosition().y < 0) {
+			bg1.setPosition(0,768);
+		}
+
+		if (bg2.getPosition().y < 0) {
+			bg2.setPosition(0,768);
+		}
 	}
+	
 
 	if (music.getPlayingOffset() == music.getDuration()) {
 		music.stop();
@@ -225,35 +264,50 @@ void Game::update()
 	}
 
 	/* x collision check*/
-	pl.spr.move(pl.vel.x, 0);
 	std::vector<Object> obj = lvl.GetAllObjects();
+	sf::FloatRect hr = pl.spr.getGlobalBounds();
+	sf::FloatRect vr = pl.spr.getGlobalBounds();
+	hr.left += pl.vel.x;
 	for (int i=0;i<obj.size();i++) {
-		if (pl.spr.getGlobalBounds().intersects(obj[i].rect)) {
+		if (hr.intersects(obj[i].rect)) {
 			if (obj[i].name=="solid") {
-
-				if (pl.vel.x > 0 ) { pl.spr.move(-pl.vel.x*timescale, 0); pl.vel.x = 0; }
-				if (pl.vel.x < 0 ) { pl.spr.move(-pl.vel.x*timescale, 0); pl.vel.x = 0; }
-
+				pl.vel.x = 0;
+				break;
 			} 
 		}
 	}
 
+	pl.spr.move(pl.vel.x, 0);
+
 	/* y collision check */
-	pl.spr.move(0, pl.vel.y);
-	for (int i=0;i<obj.size();i++) {
-		if (pl.spr.getGlobalBounds().intersects(obj[i].rect)) {
+	vr.top += pl.vel.y;
+	if (pl.hp > 0) for (int i=0;i<obj.size();i++) {
+
+		if (vr.intersects(obj[i].rect)) {
 			if (obj[i].name=="solid") {
-				if (pl.vel.y > 0) { pl.spr.setPosition(sf::Vector2f(pl.spr.getPosition().x, obj[i].rect.top - obj[i].rect.height)); pl.vel.y = 0; pl.onGround = true;}
-				if (pl.vel.y < 0) { pl.spr.move(0, -pl.vel.y*timescale); pl.vel.y = 0;}
+				if (pl.vel.y*force > 0) { pl.vel.y = 0; pl.onGround = true;}
+				if (pl.vel.y*force < 0) { pl.vel.y = 0;}
 				continue;
 			} 
 
 			/* If we touched damage blocks*/
 			if (obj[i].name == "damage") {
-				deathSnd.play();
+				dmgSnd.play();
 				pl.vel.x = 0;
 				pl.vel.y = 0;
-				restartLevel();	
+
+				/* if we are dead (hp == 0) */
+				if (pl.damage(-1)) {
+					timescale = 0.0f;
+					music.stop();
+
+					/* play animation (?) */
+					deadClock.restart();
+					animState = 1;
+					deathSnd.play();
+				} else {
+					restartLevel();
+				}
 				continue;
 			}
 
@@ -278,13 +332,20 @@ void Game::update()
 
 			if (obj[i].name == "rewind") {
 				if (timescale == 1.0f) {
-				  rewSnd.play();
-				  timescale = 0.4f;
-				  music.setPitch(0.5f);
+					rewSnd.play();
+					timescale = 0.4f;
+					music.setPitch(0.5f);
 				}
+			}
+
+			if (obj[i].name == "magnet") {
+				if (magnet) continue;
+				magnet = true;
+				pickupSnd.play();
 			}
 		}
 	}
+	pl.spr.move(0,pl.vel.y);
 
 
 	if (pl.spr.getGlobalBounds().contains(endPos)) {
@@ -295,14 +356,41 @@ void Game::update()
 		flashing = true;
 
 		loadLevel();
+		pl.damage(1);
 	}
 
 	if (debug) {
 		std::stringstream ss;
-		ss << "vel: " << pl.vel.x << " : " << pl.vel.y << "\n" << "onGround: " << pl.onGround << "\nkey: " << key << "\nlvl: "<< currentLevel;
+		ss << "pos: " << pl.spr.getPosition().x << " : " << pl.spr.getPosition().y << "\n" << "onGround: " << pl.onGround << "\nkey: " << key << "\ntimescale: "<< timescale << "\nforce: " << force;
 		debugTxt.setString(ss.str());
 	}
-					
+
+
+	if (animState == 1) {
+		if (deathView.getSize().x > Constants::DEATHVIEW_WIDTH) {
+			sf::Vector2f s = deathView.getSize();
+			s.x -= 10;
+			s.y -= 7.6f;
+			deathView.setCenter(pl.spr.getPosition());
+			deathView.setSize(s);
+		}
+
+		if (deadClock.getElapsedTime().asMilliseconds() >= 1750 ) {
+			animState = 2;
+			deadClock.restart();
+			pl.tex.loadFromFile("data/images/dead.png");
+			flash.setFillColor(sf::Color::Red);
+			flashing = true;
+			okSnd.play();
+			deathView.setCenter(pl.spr.getPosition());
+		}
+	}
+
+	if (animState == 2) {
+		if (deadClock.getElapsedTime().asSeconds() > 2) {
+			finished = true;
+		}
+	}
 }
 
 void Game::handleEvent(sf::Event event)
@@ -310,6 +398,13 @@ void Game::handleEvent(sf::Event event)
 	if (event.type == sf::Event::KeyReleased) {
 		if (event.key.code == sf::Keyboard::F3) {
 			debug = !debug;
+		}
+
+		if (event.key.code == sf::Keyboard::E && magnet) {
+			force = -force;
+			pl.vel.y = 0;
+			pl.spr.setScale(pl.spr.getScale().x, -pl.spr.getScale().y);
+			magSnd.play();
 		}
 	}
 }
@@ -323,7 +418,8 @@ void Game::draw(sf::RenderWindow &window)
 	window.draw(bg2);
 	lvl.Draw(window);
 	pl.draw(window);
-	window.draw(tip);
+	if (animState == 0) window.draw(tip);
+	if (animState > 0) window.setView(deathView);
 	if (isKey && !key) window.draw(keySpr);
 	if (flashing) window.draw(flash);
 	if (debug) window.draw(debugTxt);
@@ -331,4 +427,5 @@ void Game::draw(sf::RenderWindow &window)
 		tpSpr.setPosition(teleports[i]);
 		window.draw(tpSpr);
 	}
+	if (!magnet) window.draw(magSpr);
 }

@@ -16,16 +16,7 @@
 
 Player::Player(void)
 {
-	tex.loadFromFile("data/images/player.png");
-	spr.setTexture(tex);
-	spr.setPosition(10,10);
-	spr.setOrigin(sf::Vector2f(spr.getLocalBounds().width/2, 0 ));
-
-	jumpBuff.loadFromFile("data/sfx/jump.ogg");
-	jumpSnd.setBuffer(jumpBuff);
-
-	vel.y = Constants::GRAVITY;
-	onGround = false;
+	
 }
 
 
@@ -33,12 +24,35 @@ Player::~Player(void)
 {
 }
 
+void Player::init() {
+	tex.loadFromFile("data/images/player.png");
+	spr.setTexture(tex);
+	spr.setPosition(10,10);
+	spr.setOrigin(sf::Vector2f(spr.getLocalBounds().width/2, spr.getLocalBounds().height/2 ));
 
-void Player::update(float timescale)
+	jumpBuff.loadFromFile("data/sfx/jump.ogg");
+	jumpSnd.setBuffer(jumpBuff);
+
+	vel.y = Constants::GRAVITY;
+	onGround = false;
+	hp = Constants::MAXHP;
+
+	hpbar.setFillColor(sf::Color::Green);
+	hpbar.setPosition(38,38);
+	hpbar.setSize(sf::Vector2f(Constants::HPBAR_WIDTH-2, 30));
+
+	hpbarOutline.setPosition(36,36);
+	hpbarOutline.setSize(sf::Vector2f(Constants::HPBAR_WIDTH, 32));
+	hpbarOutline.setOutlineThickness(2);
+	hpbarOutline.setOutlineColor(sf::Color::White);
+	hpbarOutline.setFillColor(sf::Color(0,0,0,0));
+}
+
+void Player::update(float timescale, int force)
 {
 	if (sf::Keyboard::isKeyPressed(sf::Keyboard::W)) { 
 		if (onGround) {
-			vel.y += Constants::JUMP_POWER;
+			vel.y += Constants::JUMP_POWER*force;
 			onGround = false;
 			jumpSnd.play();
 		}
@@ -46,7 +60,7 @@ void Player::update(float timescale)
 	if (sf::Keyboard::isKeyPressed(sf::Keyboard::A)) {
 		if (right) {
 			right = false;
-			spr.setScale(-1.f, 1.f);
+			spr.setScale(-1.f, spr.getScale().y);
 		}
 		vel.x = -Constants::PLAYER_SPEED;
 	}
@@ -54,12 +68,12 @@ void Player::update(float timescale)
 	if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) {
 		if (!right) {
 			right = true;
-			spr.setScale(1.f, 1.f);
+			spr.setScale(1.f, spr.getScale().y);
 		}
-		vel.x = Constants::PLAYER_SPEED * timescale;
+		vel.x = Constants::PLAYER_SPEED;
 	} 
 
-	vel.y += Constants::GRAVITY * timescale;
+	vel.y += Constants::GRAVITY * timescale * force;
 
 
 	if (!sf::Keyboard::isKeyPressed(sf::Keyboard::A) && !sf::Keyboard::isKeyPressed(sf::Keyboard::D)) {
@@ -69,8 +83,20 @@ void Player::update(float timescale)
 	
 }
 
+bool Player::damage(int v) {
+	if (hp+v > Constants::MAXHP) return false;
+	hp += v;
+	int nw = hp * (Constants::HPBAR_WIDTH-2) / Constants::MAXHP;
+	hpbar.setSize(sf::Vector2f(nw, 30));
+	return (hp == 0);
+}
+
 
 void Player::draw(sf::RenderWindow& window)
 {
 	window.draw(spr);
+	if (hp > 0) { 
+		window.draw(hpbar);
+		window.draw(hpbarOutline);
+	}
 }

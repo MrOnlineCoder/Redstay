@@ -57,7 +57,15 @@ int main()
 			}
 		} else {
 			game.update();
+			if (game.finished) {
+				game.finished = false;
+				playing = false;
+				menu.startClicked = false;
+				window.setView(window.getDefaultView());
+				menu.init();
+			}
 		}
+
 
 		/*
 			Draw

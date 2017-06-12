@@ -38,7 +38,7 @@ void Menu::init() {
 
 	fg.setSize(sf::Vector2f(1024, 768));
 	fg.setFillColor(sf::Color::Black);
-
+	lines.clear();
 
 	logo.setFont(logoFont);
 	logo.setString("Redstay");

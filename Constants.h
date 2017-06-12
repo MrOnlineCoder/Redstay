@@ -28,4 +28,10 @@ namespace Constants {
 
 	const sf::Color RED(213,14,14,255);
 	const sf::Color BLUE(0,89,190,255);
+
+	const int HPBAR_WIDTH = 128;
+	const int MAXHP = 5;
+
+	const int DEATHVIEW_WIDTH = 256;
+	const int DEATHVIEW_HEIGHT = 192;
 };
