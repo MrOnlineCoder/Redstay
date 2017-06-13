@@ -15,9 +15,8 @@
 
 int main()
 {
-    sf::RenderWindow window(sf::VideoMode(1024, 768), "Redstay");
+    sf::RenderWindow window(sf::VideoMode(1024, 768), "Redstay by MrOnlineCoder");
 	window.setFramerateLimit(60);
-	sf::Texture tex;
 
 	bool playing = false;
 
@@ -48,7 +47,7 @@ int main()
 		/*
 			Update
 		*/
-
+		if (!window.hasFocus()) continue;
 		if (!playing) {
 			menu.update();
 			if (menu.startClicked) {

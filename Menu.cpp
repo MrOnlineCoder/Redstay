@@ -48,7 +48,7 @@ void Menu::init() {
 	logo.setStyle(sf::Text::Underlined);
 
 	credits.setFont(f);
-	credits.setString("Created by MrOnlineCoder\nMusic and SFX by Eric Matyas");
+	credits.setString("Created by MrOnlineCoder\nMusic and SFX by Eric Matyas and Kevin MacLeod");
 	credits.setFillColor(sf::Color::Black);
 	credits.setPosition(50, 768-credits.getGlobalBounds().height-50);
 

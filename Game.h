@@ -11,14 +11,13 @@
 #include <SFML/Graphics.hpp>
 #include "level.h"
 #include "Player.h"
+#include "Boss.h"
 #include <SFML/Audio.hpp>
 
 #pragma once
 class Game
 {
 public:
-	Game(void);
-	virtual virtual ~Game(void);
 	void init();
 	void draw(sf::RenderWindow &window);
 	void update();
@@ -63,6 +62,10 @@ public:
 	sf::Sound magSnd;
 	sf::SoundBuffer magBuff;
 
+	sf::Sound kickSnd;
+	sf::SoundBuffer kickBuff;
+
+
 	sf::RectangleShape flash;
 
 	sf::Sprite keySpr;
@@ -82,17 +85,29 @@ public:
 	std::vector<sf::Vector2f> teleports;
 	std::map<std::string,sf::Vector2f> teleportsEnds;
 
+	Boss boss;
+
 
 	int currentLevel;
+
 	bool flashing;
+
 	bool key;
 	bool isKey;
+
 	bool hasTp;
+
 	bool debug;
+
 	float timescale;
 	int animState;
+
 	bool finished;
+
 	bool magnet;
+	bool hasMagnet;
 	int force;
+
+	bool bossLevel;
 };
 

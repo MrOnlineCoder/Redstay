@@ -28,41 +28,35 @@ std::string itos(int i) // convert int to string
 }
 
 
-Game::Game(void)
-{
-
-}
-
-
-Game::~Game(void)
-{
-
-}
-
-
 void Game::init(void)
 {
+	// seed random generator
 	srand(time(0));
-	currentLevel = 10;
+
+	//reset logic variables
+	currentLevel = 0;
 	flashing = false;
 	debug = false;
 	animState = 0;
 	force = 1;
 	finished = false;
+	timescale = 1.0f;
+	
+	//init the player
 	pl.init();
 	pl.tex.loadFromFile("data/images/player.png");
-	timescale = 1.0f;
 
 	tips.clear();
 	tracks.clear();
 
 
-
+	//Add music
 	tracks.push_back("data/music/game.ogg");
 	tracks.push_back("data/music/game2.ogg");
 	tracks.push_back("data/music/game3.ogg");
 	tracks.push_back("data/music/game4.ogg");
 
+	//Set up game tips
 	tips.push_back("Use A and D to move, W to jump");
 	tips.push_back("Try to avoid Red Blocks");
 	tips.push_back("Be patient.");
@@ -75,14 +69,18 @@ void Game::init(void)
 	tips.push_back("Stuck in space!");
 	tips.push_back("Press E to use a magnet");
 	tips.push_back("Swap and stop!");
-	tips.push_back("Good Luck.\n-Mr.Gray");
+	tips.push_back("All in one!");
+	tips.push_back("It's time.");
+	tips.push_back("...");
 
+	//-- UI SETUP --
 	f.loadFromFile("data/fonts/Roboto-Regular.ttf");
 	tip.setString(tips[currentLevel]);
 	tip.setCharacterSize(18);
-	tip.setPosition(32,3);
 	tip.setFillColor(sf::Color::White);
 	tip.setFont(f);
+	tip.setPosition(Constants::GAME_WIDTH/2-tip.getGlobalBounds().width/2,50);
+
 
 
 	newMusic();
@@ -115,6 +113,9 @@ void Game::init(void)
 	magBuff.loadFromFile("data/sfx/magnet.ogg");
 	magSnd.setBuffer(magBuff);
 
+	kickBuff.loadFromFile("data/sfx/kick.wav");
+	kickSnd.setBuffer(kickBuff);
+
 	flash.setFillColor(sf::Color::White);
 	flash.setSize(sf::Vector2f(1024,768));
 	flash.setPosition(sf::Vector2f(0,0));
@@ -139,11 +140,14 @@ void Game::init(void)
 
 	magSpr.setPosition(sf::Vector2f(-1000,-1000));
 
+
+	//Let the fun begin!
 	loadLevel();
 }
 
 void Game::loadLevel() {
 
+	//Clear stuff about old level
 	teleports.clear();
 	teleportsEnds.clear();
 	timescale = 1.0f;
@@ -151,12 +155,15 @@ void Game::loadLevel() {
 	magnet = false;
 	force = 1;
 
+	//Load level
 	std::string path = "data/levels/";
 	path = path + itos(currentLevel);
 	path = path + ".tmx";
 	lvl.LoadFromFile(path);
 	lvl.SetDrawingBounds(sf::FloatRect(0,0,1024+32, 768+32));
 
+
+	//Set up game objects
 	Object o = lvl.GetObject("player");
 	pl.spr.setPosition(o.rect.left + Constants::TILESIZE/2, o.rect.top + Constants::TILESIZE/2);
 
@@ -177,6 +184,9 @@ void Game::loadLevel() {
 	if (lvl.HasObject("magnet")) {
 		Object mobj = lvl.GetObject("magnet");
 		magSpr.setPosition(sf::Vector2f(mobj.rect.left, mobj.rect.top));
+		hasMagnet = true;
+	} else {
+		hasMagnet = false;
 	}
 
 	std::vector<Object> objs = lvl.GetAllObjects();
@@ -191,16 +201,28 @@ void Game::loadLevel() {
 		}
 	}
 
-
-
-	/*std::vector<Object> objs = lvl.GetAllObjects();
-	for (int i=0;i<objs.size();i++) {
-	if (objs[i].name == "damage") {
-	blacks.push_back(objs[i].rect);
+	if (lvl.HasObject("boss")) {
+		bossLevel = true;
+		Object bo = lvl.GetObject("boss");
+		boss.init(bo.rect.left, bo.rect.top);
+		music.stop();
+		music.setLoop(true);
+		music.openFromFile("data/music/boss.ogg");
+		music.play();
+	} else {
+		bossLevel = false;
 	}
-	}*/
 
+	bg1.setPosition(0,-768);
+	bg2.setPosition(0,0);
+
+
+	//update current tip
 	tip.setString(tips[currentLevel]);
+	tip.setPosition(Constants::GAME_WIDTH/2-tip.getGlobalBounds().width/2,50);
+
+	//reset game environment
+	restartLevel();
 }
 
 void Game::restartLevel() {
@@ -208,7 +230,9 @@ void Game::restartLevel() {
 	Object o = lvl.GetObject("player");
 	pl.spr.setPosition(o.rect.left + Constants::TILESIZE/2, o.rect.top + Constants::TILESIZE/2);
 	key = false;
+	magnet = false;
 	force = 1;
+	pl.spr.setScale(1.f, 1.f);
 }
 
 void Game::newMusic() {
@@ -219,12 +243,20 @@ void Game::newMusic() {
 
 void Game::update()
 {
+	//update input only if player is not dead
 	if (animState == 0) pl.update(timescale, force);
 
 	/* pretty background animation*/
-	bg1.move(0, Constants::BG_SPEED*timescale*force);
-	bg2.move(0, Constants::BG_SPEED*timescale*force);
+	if (bossLevel) { //move faster on boss level
+		bg1.move(0, Constants::BG_SPEED*timescale*force*3); 
+		bg2.move(0, Constants::BG_SPEED*timescale*force*3);
+	} else {
+		bg1.move(0, Constants::BG_SPEED*timescale*force); 
+		bg2.move(0, Constants::BG_SPEED*timescale*force);
+	}
+	
 
+	//deal with force
 	if (force == 1) {
 		if (bg1.getPosition().y >= 768) {
 			bg1.setPosition(0,-768);
@@ -242,9 +274,8 @@ void Game::update()
 			bg2.setPosition(0,768);
 		}
 	}
-	
-
-	if (music.getPlayingOffset() == music.getDuration()) {
+		
+	if (music.getStatus() == sf::SoundSource::Stopped && !bossLevel) {
 		music.stop();
 		newMusic();
 	}
@@ -347,7 +378,7 @@ void Game::update()
 	}
 	pl.spr.move(0,pl.vel.y);
 
-
+	// check if we reached the end
 	if (pl.spr.getGlobalBounds().contains(endPos)) {
 		if (isKey && !key) return;
 		currentLevel++;
@@ -359,13 +390,14 @@ void Game::update()
 		pl.damage(1);
 	}
 
+	//debug rendering
 	if (debug) {
 		std::stringstream ss;
 		ss << "pos: " << pl.spr.getPosition().x << " : " << pl.spr.getPosition().y << "\n" << "onGround: " << pl.onGround << "\nkey: " << key << "\ntimescale: "<< timescale << "\nforce: " << force;
 		debugTxt.setString(ss.str());
 	}
 
-
+	//death animation
 	if (animState == 1) {
 		if (deathView.getSize().x > Constants::DEATHVIEW_WIDTH) {
 			sf::Vector2f s = deathView.getSize();
@@ -389,6 +421,32 @@ void Game::update()
 	if (animState == 2) {
 		if (deadClock.getElapsedTime().asSeconds() > 2) {
 			finished = true;
+		}
+	}
+
+	if (bossLevel) {
+		if (boss.update() == 100) finished = true;
+
+		if (boss.proj.getGlobalBounds().contains(pl.spr.getPosition())) {
+			pl.damage(-1);
+			boss.proj.setPosition(-2000,-2000); //put it away
+		}
+
+		for (int i=0;i<boss.spikes.size();i++) {
+			if (boss.spikes[i].getGlobalBounds().contains(pl.spr.getPosition())) {
+				pl.damage(-1);
+				boss.spikes.clear();
+			}
+		}
+
+		if (boss.state == 4 && boss.spr.getGlobalBounds().intersects(pl.spr.getGlobalBounds())) {
+			kickSnd.play();
+			boss.state = 0;
+			Object bo = lvl.GetObject("boss");
+			boss.init(bo.rect.left, bo.rect.top);
+			boss.damage();
+
+			if (boss.hp == 0) music.stop();
 		}
 	}
 }
@@ -427,5 +485,6 @@ void Game::draw(sf::RenderWindow &window)
 		tpSpr.setPosition(teleports[i]);
 		window.draw(tpSpr);
 	}
-	if (!magnet) window.draw(magSpr);
+	if (hasMagnet && !magnet) window.draw(magSpr);
+	if (bossLevel) boss.draw(window);
 }

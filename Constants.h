@@ -14,7 +14,7 @@
 
 namespace Constants {
 	const int GAME_WIDTH = 1024;
-	const int GAME_HEIGHY = 768;
+	const int GAME_HEIGHT = 768;
 
 	const float PLAYER_SPEED = 5.0f;
 	const float JUMP_POWER = -14.0f;
@@ -34,4 +34,6 @@ namespace Constants {
 
 	const int DEATHVIEW_WIDTH = 256;
 	const int DEATHVIEW_HEIGHT = 192;
+
+	const int BOSS_HP = 4;
 };

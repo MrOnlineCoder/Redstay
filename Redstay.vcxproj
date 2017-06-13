@@ -43,10 +43,15 @@
     <IncludePath>E:\DEVELOPMENT\C++\LIBRARIES\SFML-2.4.2-windows-vc11-32-bit\SFML-2.4.2\include;E:\DEVELOPMENT\C++\PROJECTS\JustAMinute\JustAMinute\tmxlite\include;$(IncludePath)</IncludePath>
     <LibraryPath>E:\DEVELOPMENT\C++\LIBRARIES\SFML-2.4.2-windows-vc11-32-bit\SFML-2.4.2\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <IncludePath>E:\DEVELOPMENT\C++\LIBRARIES\SFML-2.4.2-windows-vc11-32-bit\SFML-2.4.2\include;$(IncludePath)</IncludePath>
+    <LibraryPath>E:\DEVELOPMENT\C++\LIBRARIES\SFML-2.4.2-windows-vc11-32-bit\SFML-2.4.2\lib;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
+      <SuppressStartupBanner>false</SuppressStartupBanner>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -65,9 +70,12 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>sfml-window.lib;sfml-system.lib;sfml-graphics.lib;sfml-audio.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>E:\DEVELOPMENT\C++\LIBRARIES\SFML-2.4.2-windows-vc11-32-bit\SFML-2.4.2\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Boss.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="level.cpp" />
     <ClCompile Include="main.cpp" />
@@ -79,6 +87,7 @@
     <ClCompile Include="tinyxml\tinyxmlparser.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Boss.h" />
     <ClInclude Include="Constants.h" />
     <ClInclude Include="Game.h" />
     <ClInclude Include="level.h" />
